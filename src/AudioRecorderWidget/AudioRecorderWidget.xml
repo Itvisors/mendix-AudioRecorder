@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget id="AudioRecorderWidget.widget.AudioRecorderWidget" needsEntityContext="true" offlineCapable="true" xmlns="http://www.mendix.com/widget/1.0/">
+    <name>AudioRecorderWidget</name>
+    <description>Record audio using the native device function.</description>
+
+    <icon />
+
+    <properties>
+        <property key="dummyKey" type="string" required="false" defaultValue="">
+            <caption>Dummy key</caption>
+            <category>Appearance</category>
+            <description>Widget has no parameters</description>
+        </property>
+    </properties>
+</widget>

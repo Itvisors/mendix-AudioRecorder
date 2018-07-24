@@ -1,0 +1,11 @@
+{
+  "generator-mendix": {
+    "promptValues": {
+      "copyright": "ITvisors 2018",
+      "license": "Apache 2",
+      "author": "Marcel Groeneweg",
+      "boilerplate": "empty",
+      "widgetoptions": []
+    }
+  }
+}
