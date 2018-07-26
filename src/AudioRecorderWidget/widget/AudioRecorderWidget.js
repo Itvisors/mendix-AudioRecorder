@@ -1,6 +1,6 @@
 /*jshint undef: true, browser:true, nomen: true */
 /*jslint browser:true, nomen: true */
-/*global mx, mxui, define, require, console, cordova, logger, resolveLocalFileSystemURL */
+/*global mx, mxui, define, require, console, cordova, logger, resolveLocalFileSystemURL, CaptureError */
 /*
 
 
@@ -39,10 +39,6 @@ define([
             this._updateRendering(callback);
         },
 
-        // resize: function (box) {
-        //     logger.debug(this.id + ".resize");
-        // },
-
         uninitialize: function () {
             logger.debug(this.id + ".uninitialize");
         },
@@ -77,25 +73,20 @@ define([
 
             // Result is always an array, if recording succeeded, array has one element.
             if (mediaFiles.length) {
-                path = mediaFiles[0].fullPath;
+                path = mediaFiles[0].localURL;
                 // Resolve path into a file entry
                 resolveLocalFileSystemURL(path, function (fileEntry) {
+                    // A file retrieved using resolveLocalFileSystemURL can be stored directly in Mendix because File inherits from Blob.
                     fileEntry.file(function(file) {
-                        // Read contents of the file
-                        var reader = new FileReader();
-                        reader.onloadend = function(e) {
-                            // Save contents of the file in the context object
-                            window.mx.data.saveDocument(
-                                thisObj._contextObj.getGuid(),
-                                "audio",
-                                {},
-                                new Blob([ this.result ]),
-                                lang.hitch(thisObj, thisObj._saveDocumentCallback),
-                                lang.hitch(thisObj, thisObj._showError)
-                            );
-                        };
-                        reader.readAsBinaryString(file);
-                    });                    
+                        window.mx.data.saveDocument(
+                            thisObj._contextObj.getGuid(),
+                            "audio",
+                            {},
+                            file,
+                            lang.hitch(thisObj, thisObj._saveDocumentCallback),
+                            lang.hitch(thisObj, thisObj._showError)
+                        );
+                });                    
                 }, function (error) {
                     console.log("resolveLocalFileSystemURL error");
                     console.dir(error);
@@ -104,18 +95,22 @@ define([
             }
         },
 
-        _saveDocumentCallback: function () {
+        _saveDocumentCallback: function (path) {
             logger.debug(this.id + "._saveDocumentCallback");
-
+            console.log("Document saved from path " + path);
         },
 
         _showError: function (e) {
-            mx.ui.error("Saving generated PDF failed with error code " + e.code);
+            mx.ui.error("Saving file failed with error code " + e.code);
         },
 
         _captureError: function (error) {
             if (error) {
-                mx.ui.error("Audio capture failed, error: " + error.code);
+                if (error.code === CaptureError.CAPTURE_NO_MEDIA_FILES) {
+                    console.log("User cancelled the recording");
+                } else {
+                    mx.ui.error("Audio capture failed, error: " + error.code);
+                }
             } else {
                 mx.ui.error("Audio capture failed.");
             }
