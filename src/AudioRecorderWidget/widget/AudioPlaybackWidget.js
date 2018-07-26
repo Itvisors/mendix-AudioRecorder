@@ -72,6 +72,8 @@ define([
             var thisObj = this;
             if (!this._media) {
                 console.log("Start media playback");
+                // This does not work! Mendix stores the file without extension, probably the media player needs the extension.
+                // See https://github.com/Itvisors/mendix-OfflineDocumentWidget
                 this._media = new Media(this._recordingPath, function(e) {
                     thisObj._media.release();
                     thisObj._media = null;
