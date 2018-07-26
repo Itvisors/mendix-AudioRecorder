@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget id="AudioRecorderWidget.widget.AudioPlaybackWidget" needsEntityContext="true" offlineCapable="true" xmlns="http://www.mendix.com/widget/1.0/">
+    <name>AudioPlaybackWidget</name>
+    <description>Playback audio using the native device function.</description>
+
+    <icon>iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMjHxIGmVAAACU0lEQVR4XuWaSU4VYRSFn91EEpuZzQjmOpcNqBuw2YAuAdwAsATdgM0GgA3IXBirI3WmDnRi/53ATV4MUFT93b1VJ/kSwux9kJNzq97smJyHK/s/TjPX4TM8gjP6xdQiAX8PeA03YFKZFyB+wAYswCTyvwDjPdyFUzDqHCVA/IFXcA1Gm+MEGF9htCV5EgHGDtyEUaWPAKGSXIPRlGRfAcY7uAPhM1SA8QJCL8lUAeILPIbTEC45BBgqyXBLMqcAoZJcBx1ZIZJbgPEWboP7JVlKgNCSVEleBbcpKcBQSbpdkjUEGC6XZE0BwkrSzZKsLcCwc7t5WgkQLs7tlgIMndtakk1K0oMAo8mS9CRA2LldbUl6E2DYkiwerwKESvI5FD23PQsw7MVNkXM7ggCjyJKMJEBkf3ETTYBhzySTz+2oAoRK8iUknduRBRj24mbQf8MYBPyEp3AWeie6gDdwCwYnqoBvsAqD/urziShgGxYhSyIJ+AQPIGsiCPgNKrlLkD3eBezBMhSLVwFWcuegaLwJ0Lrbgmwl1xVPAj7Cfaj6Os2DAFtyF6F6WgvYhaQll5pWAqqVXFdaCNiEaiXXlZoCVHL3wNV3BmoI+AUquQvgLqUFNC+5rpQS8B2ynKulU0KAztUlCJGcAnSuPoRQySFAJfcMLkO4pApQyRU9V0tnqAAtuRVovuRS01eAzlVXSy41fQR8AHdLLjUnEWDnqssll5ouAckvHrznKAEquSfgfsml5jABVZ/Jtc68AHsmN6lIgJ2rTZ7JtY4+dOgl153Z7B/Lei4IrXgUjQAAAABJRU5ErkJggg==</icon>
+
+    <properties>
+        <property key="dummyKey" type="string" required="false" defaultValue="">
+            <caption>Dummy key</caption>
+            <category>Appearance</category>
+            <description>Widget has no parameters</description>
+        </property>
+    </properties>
+</widget>

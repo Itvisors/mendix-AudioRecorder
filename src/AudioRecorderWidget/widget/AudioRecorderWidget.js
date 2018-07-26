@@ -70,15 +70,15 @@ define([
             logger.debug(this.id + "._handlePlayButtonClick");
             var thisObj = this;
             if (!this._media) {
-                console.log("Start media playback");
+                // console.log("Start media playback");
                 this._media = new Media(this._recordingPath, function(e) {
                     thisObj._media.release();
                     thisObj._media = null;
-                    console.log("Media playback stopped, released media object");
+                    // console.log("Media playback stopped, released media object");
                 }, function (err) {
                     console.log("media playback error: ", err);
                 }, function (statusCode) {
-                    console.log("media playback status: " + statusCode);
+                    // console.log("media playback status: " + statusCode);
                 });
                 this._media.play();
             }
@@ -91,7 +91,7 @@ define([
 
         _stopPlayback: function () {
             logger.debug(this.id + "._stopPlayback");
-            console.log("Stop media playback");
+            // console.log("Stop media playback");
             if (this._media) {
                 this._media.stop();
                 this._media.release();
@@ -119,7 +119,7 @@ define([
         },
 
         _startRecording: function () {
-            console.log("Start new recording");
+            // console.log("Start new recording");
             if (typeof navigator.device.capture.captureAudio === "undefined") {
                 mx.ui.error("Audio device not detected.");
                 return;
@@ -175,27 +175,6 @@ define([
                 }
             } else {
                 mx.ui.error("Audio capture failed.");
-            }
-        },
-
-        // Shorthand for running a microflow
-        _execMf: function (mf, guid, cb) {
-            logger.debug(this.id + "._execMf");
-            if (mf && guid) {
-                mx.ui.action(mf, {
-                    params: {
-                        applyto: "selection",
-                        guids: [guid]
-                    },
-                    callback: lang.hitch(this, function (objs) {
-                        if (cb && typeof cb === "function") {
-                            cb(objs);
-                        }
-                    }),
-                    error: function (error) {
-                        console.debug(error.description);
-                    }
-                }, this);
             }
         },
 
