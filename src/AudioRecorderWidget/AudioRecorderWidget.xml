@@ -6,10 +6,15 @@
     <icon>iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMjHxIGmVAAACOElEQVR4Xu2auy5FQRSGj5IHoaGioaLV8RQ8jkvlbahcWr2CmoRCQ/i/xE5Eljiz57JnmfmSLzk5Z++5nH3OzJo1M+t0Op1OJysLck0eyjN5Ie/ki3z7kte8x2dcw7Xcw71u2ZDH8kF+jJR7KYOyXMAT25dX0upQjJdyT1b7q9iSN9JqfEqv5aashiV5Kt+l1eAcUteJpO5JWZG30mpkCambNkzCjnySVsNK+ii3ZVF25au0GjSFtIU2FYEnX1PnB2lT9l8C/7cafva/SduyjQmMuFMOePNKG7PMDkx1VoU1yhSZFIKckvN8rLQ1WbBE6FkiwkstEWOSsJnY3qrAg6wdosmxsCklC6goWIZaBXtyXY6GtbhVqCfpwygYQGKSGbV4L0cNhqSkrAI9uiqDIS9nFebRAxkMyUmrMI/Sl2DI0FqFefRcBkOa2irMo/QlGHL1VmEefZbBsGFhFeZR+hJM819A83+B5gfB5qfB5gOh5kPh5hdDzS+H4T8kRI7kaJpPiQGJRatgD0YnRYHUslW4B5OkxRlA2GSwKqjZZBsjwDZTs1tjA2w4WpXVaPLNUfC0Pb4os8DhA87kWBXXIG1bllnhGEqzR2QGmj4kNcC33ewxuYEaDkpm/8//BbMD007JOIG6qDPbaD8GAo8SEWN1h6W/Q+hJ/J1jAVX9cfmfsAwln0BCwurQPHIv6/noJe2U8MRISZGXIzlJhpY0Nbl6NiyQ17zHZ1zDtdzj5ml3Op1Oxx+z2SeuVUPD1wP+OAAAAABJRU5ErkJggg==</icon>
 
     <properties>
-        <property key="dummyKey" type="string" required="false" defaultValue="">
-            <caption>Dummy key</caption>
-            <category>Appearance</category>
-            <description>Widget has no parameters</description>
+        <property key="maxDuration" type="integer" defaultValue="30000">
+            <caption>Max duration</caption>
+            <category>Configuration</category>
+            <description>Maximum record duration in milliseconds, to make sure recording stops when user does not hit the stop button.</description>
+        </property>
+        <property key="stopRecordingDelay" type="integer" defaultValue="2000">
+            <caption>Stop delay</caption>
+            <category>Configuration</category>
+            <description>Stop recording delay in milliseconds, recording misses the last few seconds when saving.</description>
         </property>
     </properties>
 </widget>

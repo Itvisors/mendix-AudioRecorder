@@ -1,6 +1,6 @@
 /*jshint undef: true, browser:true, nomen: true */
 /*jslint browser:true, nomen: true */
-/*global mx, mxui, define, require, console, cordova, logger, resolveLocalFileSystemURL, CaptureError, Media */
+/*global mx, mxui, define, require, console, cordova, logger, resolveLocalFileSystemURL, CaptureError, Media, device */
 /*
 
 
@@ -23,34 +23,74 @@ define([
     return declare("AudioRecorderWidget.widget.AudioRecorderWidget", [ _WidgetBase ], {
 
         // Parameters configured in the Modeler.
+        maxDuration: 0,
+        stopRecordingDelay: 0,
 
         // Internal variables.
         _contextObj: null,
         _playButton: null,
         _stopButton: null,
         _recordButton: null,
-        _recordingPath: null,
         _media: null,
+        _filePath: null,
+        _fileName: null,
+        _timeoutHandle: null,
+        _activeFunction: null,
+        _progressDialogId: null,
+
+        // Fixed values
+        FUNCTION_RECORD: "record",
+        FUNCTION_PLAYBACK: "playback",
 
         constructor: function () {
         },
 
         postCreate: function () {
             logger.debug(this.id + ".postCreate");
+            var directory,
+                thisObj = this;
+
             this._playButton = this._placeButtonWithIcon("play");
             this._stopButton = this._placeButtonWithIcon("stop");
             this._recordButton = this._placeButtonWithIcon("record");
             dojoOn(this._playButton, "click", lang.hitch(this, this._handlePlayButtonClick));
             dojoOn(this._stopButton, "click", lang.hitch(this, this._handleStopButtonClick));
             dojoOn(this._recordButton, "click", lang.hitch(this, this._handleRecordButtonClick));
-        },
+
+            if (typeof Media === "undefined") {
+                mx.ui.error("Audio device not detected.");
+                return;
+            }
+
+            if (!device.platform) {
+                mx.ui.error("Device platform not detected.");
+                return;
+            }
+
+            this._fileName = "audio_" + mx.parser.formatValue(+new Date(), "datetime", { datePattern: "yyyyMMdd_HHmmssSSS" });
+            // Allowed audio format differs between ios and android.
+            // Android has no temp directory configured in cordova.file
+            if (device.platform.toLowerCase() === "android") {
+                this._fileName += ".aac";
+                directory = cordova.file.externalDataDirectory;
+            } else {
+                this._fileName += ".wav";
+                directory = cordova.file.tempDirectory;
+            }
+            this._filePath = directory + this._fileName;
+            this._media = new Media(this._filePath, function() {
+                thisObj._mediaSuccess();
+            }, function (err) {
+                thisObj._mediaError(err);
+            });
+    },
 
         _placeButtonWithIcon: function (glyphiconName) {
             var buttonHtml;
 
             buttonHtml =
-                "<button type='button' class='btn mx-button btn-default'><span class='glyphicon glyphicon-" + 
-                glyphiconName + 
+                "<button type='button' class='btn mx-button btn-default'><span class='glyphicon glyphicon-" +
+                glyphiconName +
                 "'></span></button>";
             return dojoConstruct.place(buttonHtml, this.domNode);
         },
@@ -64,45 +104,88 @@ define([
 
         uninitialize: function () {
             logger.debug(this.id + ".uninitialize");
+            if (this._media) {
+                this._handleStopButtonClick();
+                this._media.release();
+                this._media = null;
+                // Attempt to delete the media file.
+                resolveLocalFileSystemURL(this._filePath, function (fileEntry) {
+                    fileEntry.remove();
+                }, function (error) {
+                    // No problem if file was not found anymore.
+                    if (error.code !== 1) {
+                        console.log("resolveLocalFileSystemURL error");
+                        console.dir(error);
+                    }
+                });
+                }
         },
 
         _handlePlayButtonClick: function () {
             logger.debug(this.id + "._handlePlayButtonClick");
-            var thisObj = this;
-            if (!this._media) {
-                // console.log("Start media playback");
-                this._media = new Media(this._recordingPath, function(e) {
-                    thisObj._media.release();
-                    thisObj._media = null;
-                    // console.log("Media playback stopped, released media object");
-                }, function (err) {
-                    console.log("media playback error: ", err);
-                }, function (statusCode) {
-                    // console.log("media playback status: " + statusCode);
-                });
+            this._activeFunction = this.FUNCTION_PLAYBACK;
+            if (this._media) {
+                console.log("Start media playback");
                 this._media.play();
             }
         },
 
         _handleStopButtonClick: function () {
             logger.debug(this.id + "._handleStopButtonClick");
-            this._stopPlayback();
+            if (this._timeoutHandle) {
+                clearTimeout(this._timeoutHandle);
+                this._timeoutHandle = null;
+            }
+            switch (this._activeFunction) {
+                case this.FUNCTION_PLAYBACK:
+                    this._stopPlayback();
+                    break;
+
+                case this.FUNCTION_RECORD:
+                    this._stopRecord();
+                    break;
+
+                default:
+                    break;
+            }
         },
 
         _stopPlayback: function () {
-            logger.debug(this.id + "._stopPlayback");
-            // console.log("Stop media playback");
+            console.log(this.id + "._stopPlayback");
             if (this._media) {
                 this._media.stop();
-                this._media.release();
-                this._media = null;
             }
+        },
+
+        _stopRecord: function () {
+            console.log(this.id + "._stopRecord");
+
+            var thisObj = this,
+                timeoutDuration;
+
+            if (this._media) {
+                this._showProgress();
+                // The recording always seem to miss the last few seconds. So wait a little when the users taps the stop button.
+                if (this.stopRecordingDelay && this.stopRecordingDelay > 500) {
+                    timeoutDuration = this.stopRecordingDelay;
+                } else {
+                    timeoutDuration = 1000;
+                }
+                setTimeout(function() {
+                    thisObj._media.stopRecord();
+                }, timeoutDuration);
+            }
+
+            // This function can also be called from setTimeout. Clear our handle.
+            this._timeoutHandle = null;
         },
 
         _handleRecordButtonClick: function () {
             logger.debug(this.id + "._handleRecordButtonClick");
-            this._stopPlayback();
-            this._startRecording();            
+            if (this._activeFunction === this.FUNCTION_PLAYBACK) {
+                this._stopPlayback();
+            }
+            this._startRecording();
         },
 
         _updateRendering: function (callback) {
@@ -110,7 +193,6 @@ define([
 
             if (this._contextObj !== null) {
                 dojoStyle.set(this.domNode, "display", "block");
-                this._startRecording();
             } else {
                 dojoStyle.set(this.domNode, "display", "none");
             }
@@ -119,62 +201,134 @@ define([
         },
 
         _startRecording: function () {
-            // console.log("Start new recording");
-            if (typeof navigator.device.capture.captureAudio === "undefined") {
-                mx.ui.error("Audio device not detected.");
+            console.log("Start new recording");
+            var timeoutDuration,
+                thisObj = this;
+
+            if (this._activeFunction === this.FUNCTION_RECORD) {
+                console.log("Already recording so ignore this call");
                 return;
             }
 
-            // Start audio capture, default is to capture one file
-            navigator.device.capture.captureAudio(lang.hitch(this, this._captureSuccess), lang.hitch(this, this._captureError));
+            if (!this._media) {
+                console.log("No media object available");
+                return;
+            }
+
+            this._activeFunction = this.FUNCTION_RECORD;
+
+            // Start audio recording, media object does not like dojo hitch.
+            console.log("Start audio recording to file " + this._filePath);
+            this._media.startRecord();
+
+            // Make sure the recording stops even if the user does not stop it.
+            if (this.maxDuration && this.maxDuration > 1000) {
+                timeoutDuration = this.maxDuration;
+            } else {
+                timeoutDuration = 10000;
+            }
+            this._timeoutHandle = setTimeout(function() {
+                thisObj._stopRecord();
+            }, timeoutDuration);
         },
 
-        _captureSuccess: function (mediaFiles) {
+        _mediaSuccess: function () {
             var thisObj = this;
+            console.log("Media success callback");
+            console.log("Recording completed");
 
-            // Result is always an array, if recording succeeded, array has one element.
-            if (mediaFiles.length) {
-                this._recordingPath = mediaFiles[0].localURL;
-                // Resolve path into a file entry
-                resolveLocalFileSystemURL(this._recordingPath, function (fileEntry) {
-                    thisObj._contextObj.set("Name", fileEntry.name);
-                    // A file retrieved using resolveLocalFileSystemURL can be stored directly in Mendix because File inherits from Blob.
-                    fileEntry.file(function(file) {
+            // No further action for playback
+            if (this._activeFunction === this.FUNCTION_PLAYBACK) {
+                this._activeFunction = null;
+                return;
+            }
+
+            // Set the name and commit. Object must be committed before file content can be saved.
+            console.log("Set file name and commit");
+            this._contextObj.set("Name", this._fileName);
+            mx.data.commit({
+                mxobj: this._contextObj,
+                callback: lang.hitch(this, this._saveDocument),
+                error: function (e) {
+                    console.error("Could not commit object:", e);
+                    thisObj._saveDocumentFinalize();
+                }
+            });
+
+        },
+
+        _saveDocument: function () {
+            var thisObj = this;
+            console.log("Access recorded file");
+            resolveLocalFileSystemURL(this._filePath, function (fileEntry) {
+                fileEntry.file(function(blob) {
+                    var fileReader = new FileReader();
+                    fileReader.onload = function(event) {
+                        console.log("Save recording in Mendix object");
                         window.mx.data.saveDocument(
                             thisObj._contextObj.getGuid(),
-                            "audio",
+                            thisObj._fileName,
                             {},
-                            file,
-                            lang.hitch(thisObj, thisObj._saveDocumentCallback),
-                            lang.hitch(thisObj, thisObj._showError)
-                        );
-                });                    
-                }, function (error) {
-                    console.log("resolveLocalFileSystemURL error");
-                    console.dir(error);
-                });
+                            new Blob([ event.target.result ]),
+                            function () {
+                                console.log("Document saved");
+                                thisObj._saveDocumentFinalize();
+                            },
+                            function (error) {
+                                console.log("Document save error");
+                                console.dir(error);
+                                thisObj._saveDocumentFinalize();
+                                mx.ui.error("Error saving the audio recording as Mendix object.");
+                            });
+                    };
 
+                    fileReader.onerror = function(event) {
+                        thisObj._saveDocumentFinalize();
+                        console.dir(event.target.error);
+                        mx.ui.error("Error reading the audio recording.");
+                    };
+
+                    fileReader.readAsArrayBuffer(blob);
+                });
+            }, function (error) {
+                console.log("resolveLocalFileSystemURL error");
+                console.dir(error);
+                thisObj._saveDocumentFinalize();
+            });
+        },
+
+        _saveDocumentFinalize: function () {
+            this._hideProgress();
+            this._activeFunction = null;
+        },
+
+        _mediaError: function (error) {
+            if (error) {
+                // Ignore error with code=0, can happen when stopping playback while it is already stopped.
+                if (error.code !== 0) {
+                    mx.ui.error("Media error, active function: " + this._activeFunction + ", error: " + error.code);
+                }
+            } else {
+                mx.ui.error("Media error, active function: " + this._activeFunction + ", no more information.");
             }
         },
 
-        _saveDocumentCallback: function (path) {
-            logger.debug(this.id + "._saveDocumentCallback");
-            //console.log("Document saved from path " + path);
+        /**
+         * Show progress indicator
+         */
+        _showProgress: function () {
+            if (this._progressDialogId === null) {
+                this._progressDialogId = mx.ui.showProgress();
+            }
         },
 
-        _showError: function (e) {
-            mx.ui.error("Saving file failed with error code " + e.code);
-        },
-
-        _captureError: function (error) {
-            if (error) {
-                if (error.code === CaptureError.CAPTURE_NO_MEDIA_FILES) {
-                    console.log("User cancelled the recording");
-                } else {
-                    mx.ui.error("Audio capture failed, error: " + error.code);
-                }
-            } else {
-                mx.ui.error("Audio capture failed.");
+        /**
+         * Hide progress indicator
+         */
+        _hideProgress: function () {
+            if (this._progressDialogId) {
+                mx.ui.hideProgress(this._progressDialogId);
+                this._progressDialogId = null;
             }
         },
 
