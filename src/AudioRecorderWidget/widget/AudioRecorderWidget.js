@@ -69,13 +69,13 @@ define([
 
             this._fileName = "audio_" + mx.parser.formatValue(+new Date(), "datetime", { datePattern: "yyyyMMdd_HHmmssSSS" });
             // Allowed audio format differs between ios and android.
-            // Android has no temp directory configured in cordova.file
+            // Use storage directory depending on platform. For iOS, use the documents location.
             if (device.platform.toLowerCase() === "android") {
                 this._fileName += ".aac";
                 directory = cordova.file.externalDataDirectory;
             } else {
                 this._fileName += ".wav";
-                directory = cordova.file.tempDirectory;
+                directory = "documents://";
             }
             this._filePath = directory + this._fileName;
             this._media = new Media(this._filePath, function() {
@@ -118,7 +118,7 @@ define([
                         console.dir(error);
                     }
                 });
-                }
+            }
         },
 
         _handlePlayButtonClick: function () {
