@@ -1,0 +1,8 @@
+/* Custom styling*/
+
+button.btn.mx-button {
+    &.disabled,
+    &[disabled] {
+        color: $gray;
+    }
+}

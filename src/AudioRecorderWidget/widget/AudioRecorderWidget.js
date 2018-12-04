@@ -13,11 +13,12 @@ define([
     "dojo/_base/declare",
     "mxui/widget/_WidgetBase",
     "dojo/dom-style",
+    "dojo/dom-attr",
     "dojo/dom-construct",
     "dojo/on",
     "dojo/_base/lang"
 
-], function (declare, _WidgetBase, dojoStyle, dojoConstruct, dojoOn, lang) {
+], function (declare, _WidgetBase, dojoStyle, dojoAttr, dojoConstruct, dojoOn, lang) {
     "use strict";
 
     return declare("AudioRecorderWidget.widget.AudioRecorderWidget", [ _WidgetBase ], {
@@ -36,11 +37,13 @@ define([
         _fileName: null,
         _timeoutHandle: null,
         _activeFunction: null,
+        _hasRecording: false,
         _progressDialogId: null,
 
         // Fixed values
-        FUNCTION_RECORD: "record",
-        FUNCTION_PLAYBACK: "playback",
+        _FUNCTION_RECORD: "record",
+        _FUNCTION_PLAYBACK: "playback",
+        _ATTR_DISABLED: "disabled",
 
         constructor: function () {
         },
@@ -48,6 +51,7 @@ define([
         postCreate: function () {
             logger.debug(this.id + ".postCreate");
             var directory,
+                mediaSrc,
                 thisObj = this;
 
             this._playButton = this._placeButtonWithIcon("play");
@@ -56,6 +60,7 @@ define([
             dojoOn(this._playButton, "click", lang.hitch(this, this._handlePlayButtonClick));
             dojoOn(this._stopButton, "click", lang.hitch(this, this._handleStopButtonClick));
             dojoOn(this._recordButton, "click", lang.hitch(this, this._handleRecordButtonClick));
+            this._updateButtonStatus();
 
             if (typeof Media === "undefined") {
                 mx.ui.error("Audio device not detected.");
@@ -69,16 +74,21 @@ define([
 
             this._fileName = "audio_" + mx.parser.formatValue(+new Date(), "datetime", { datePattern: "yyyyMMdd_HHmmssSSS" });
             // Allowed audio format differs between ios and android.
-            // Use storage directory depending on platform. For iOS, use the documents location.
+            // Use storage directory depending on platform.
+            // On iOS do NOT specify a directory for the media source.
+            // The file ends up in cordova.file.tempDirectory
+
             if (device.platform.toLowerCase() === "android") {
                 this._fileName += ".aac";
                 directory = cordova.file.externalDataDirectory;
+                mediaSrc = directory + this._fileName;
             } else {
                 this._fileName += ".wav";
-                directory = "documents://";
+                directory = cordova.file.tempDirectory;
+                mediaSrc = this._fileName;
             }
             this._filePath = directory + this._fileName;
-            this._media = new Media(this._filePath, function() {
+            this._media = new Media(mediaSrc, function() {
                 thisObj._mediaSuccess();
             }, function (err) {
                 thisObj._mediaError(err);
@@ -119,14 +129,16 @@ define([
                     }
                 });
             }
+            this._hideProgress();
         },
 
         _handlePlayButtonClick: function () {
             logger.debug(this.id + "._handlePlayButtonClick");
-            this._activeFunction = this.FUNCTION_PLAYBACK;
+            this._activeFunction = this._FUNCTION_PLAYBACK;
             if (this._media) {
                 console.log("Start media playback");
-                this._media.play();
+                this._media.play({ playAudioWhenScreenIsLocked : false });
+                this._updateButtonStatus();
             }
         },
 
@@ -137,11 +149,11 @@ define([
                 this._timeoutHandle = null;
             }
             switch (this._activeFunction) {
-                case this.FUNCTION_PLAYBACK:
+                case this._FUNCTION_PLAYBACK:
                     this._stopPlayback();
                     break;
 
-                case this.FUNCTION_RECORD:
+                case this._FUNCTION_RECORD:
                     this._stopRecord();
                     break;
 
@@ -154,6 +166,7 @@ define([
             console.log(this.id + "._stopPlayback");
             if (this._media) {
                 this._media.stop();
+                this._updateButtonStatus();
             }
         },
 
@@ -172,7 +185,9 @@ define([
                     timeoutDuration = 1000;
                 }
                 setTimeout(function() {
-                    thisObj._media.stopRecord();
+                    if (thisObj._media) {
+                        thisObj._media.stopRecord();
+                    }
                 }, timeoutDuration);
             }
 
@@ -182,7 +197,7 @@ define([
 
         _handleRecordButtonClick: function () {
             logger.debug(this.id + "._handleRecordButtonClick");
-            if (this._activeFunction === this.FUNCTION_PLAYBACK) {
+            if (this._activeFunction === this._FUNCTION_PLAYBACK) {
                 this._stopPlayback();
             }
             this._startRecording();
@@ -205,7 +220,7 @@ define([
             var timeoutDuration,
                 thisObj = this;
 
-            if (this._activeFunction === this.FUNCTION_RECORD) {
+            if (this._activeFunction === this._FUNCTION_RECORD) {
                 console.log("Already recording so ignore this call");
                 return;
             }
@@ -215,7 +230,8 @@ define([
                 return;
             }
 
-            this._activeFunction = this.FUNCTION_RECORD;
+            this._activeFunction = this._FUNCTION_RECORD;
+            this._updateButtonStatus();
 
             // Start audio recording, media object does not like dojo hitch.
             console.log("Start audio recording to file " + this._filePath);
@@ -238,8 +254,9 @@ define([
             console.log("Recording completed");
 
             // No further action for playback
-            if (this._activeFunction === this.FUNCTION_PLAYBACK) {
+            if (this._activeFunction === this._FUNCTION_PLAYBACK) {
                 this._activeFunction = null;
+                this._updateButtonStatus();
                 return;
             }
 
@@ -272,6 +289,7 @@ define([
                             new Blob([ event.target.result ]),
                             function () {
                                 console.log("Document saved");
+                                thisObj._hasRecording = true;
                                 thisObj._saveDocumentFinalize();
                             },
                             function (error) {
@@ -300,6 +318,7 @@ define([
         _saveDocumentFinalize: function () {
             this._hideProgress();
             this._activeFunction = null;
+            this._updateButtonStatus();
         },
 
         _mediaError: function (error) {
@@ -330,6 +349,23 @@ define([
                 mx.ui.hideProgress(this._progressDialogId);
                 this._progressDialogId = null;
             }
+        },
+
+        _updateButtonStatus: function () {
+            if (this._activeFunction) {
+                dojoAttr.set(this._playButton, this._ATTR_DISABLED, this._ATTR_DISABLED);
+                dojoAttr.remove(this._stopButton, this._ATTR_DISABLED);
+                dojoAttr.set(this._recordButton, this._ATTR_DISABLED, this._ATTR_DISABLED);
+            } else {
+                if (this._hasRecording) {
+                    dojoAttr.remove(this._playButton, this._ATTR_DISABLED);
+                } else {
+                    dojoAttr.set(this._playButton, this._ATTR_DISABLED, this._ATTR_DISABLED);
+                }
+                dojoAttr.set(this._stopButton, this._ATTR_DISABLED, this._ATTR_DISABLED);
+                dojoAttr.remove(this._recordButton, this._ATTR_DISABLED);
+            }
+
         },
 
         // Shorthand for executing a callback, adds logging to your inspector
