@@ -1,0 +1,9 @@
+div.audioRecorderWidget button.btn.mx-button {
+    margin-right: 5px;
+}
+
+div.audioRecorderWidget .activeFunctionIndicator {
+    display: inline-block;
+    margin: 5px;
+}
+

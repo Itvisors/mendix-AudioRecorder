@@ -12,13 +12,14 @@
 define([
     "dojo/_base/declare",
     "mxui/widget/_WidgetBase",
+    "dojo/dom-class",
     "dojo/dom-style",
     "dojo/dom-attr",
     "dojo/dom-construct",
     "dojo/on",
     "dojo/_base/lang"
 
-], function (declare, _WidgetBase, dojoStyle, dojoAttr, dojoConstruct, dojoOn, lang) {
+], function (declare, _WidgetBase, dojoClass, dojoStyle, dojoAttr, dojoConstruct, dojoOn, lang) {
     "use strict";
 
     return declare("AudioRecorderWidget.widget.AudioRecorderWidget", [ _WidgetBase ], {
@@ -32,10 +33,11 @@ define([
         _playButton: null,
         _stopButton: null,
         _recordButton: null,
+        _activeFunctionIndicator: null,
         _media: null,
         _filePath: null,
         _fileName: null,
-        _timeoutHandle: null,
+        _maxDurationTimeoutHandle: null,
         _activeFunction: null,
         _hasRecording: false,
         _progressDialogId: null,
@@ -50,9 +52,12 @@ define([
 
         postCreate: function () {
             logger.debug(this.id + ".postCreate");
-            var directory,
+            var html,
+                directory,
                 mediaSrc,
                 thisObj = this;
+
+            dojoClass.add(this.domNode, "audioRecorderWidget");
 
             this._playButton = this._placeButtonWithIcon("play");
             this._stopButton = this._placeButtonWithIcon("stop");
@@ -60,7 +65,11 @@ define([
             dojoOn(this._playButton, "click", lang.hitch(this, this._handlePlayButtonClick));
             dojoOn(this._stopButton, "click", lang.hitch(this, this._handleStopButtonClick));
             dojoOn(this._recordButton, "click", lang.hitch(this, this._handleRecordButtonClick));
-            this._updateButtonStatus();
+
+            html = "<span class='activeFunctionIndicator glyphicon' style='display:none;'></span>";
+            this._activeFunctionIndicator = dojoConstruct.place(html, this.domNode);
+
+            this._updateStatus();
 
             if (typeof Media === "undefined") {
                 mx.ui.error("Audio device not detected.");
@@ -138,15 +147,15 @@ define([
             if (this._media) {
                 console.log("Start media playback");
                 this._media.play({ playAudioWhenScreenIsLocked : false });
-                this._updateButtonStatus();
+                this._updateStatus();
             }
         },
 
         _handleStopButtonClick: function () {
             logger.debug(this.id + "._handleStopButtonClick");
-            if (this._timeoutHandle) {
-                clearTimeout(this._timeoutHandle);
-                this._timeoutHandle = null;
+            if (this._maxDurationTimeoutHandle) {
+                clearTimeout(this._maxDurationTimeoutHandle);
+                this._maxDurationTimeoutHandle = null;
             }
             switch (this._activeFunction) {
                 case this._FUNCTION_PLAYBACK:
@@ -166,7 +175,7 @@ define([
             console.log(this.id + "._stopPlayback");
             if (this._media) {
                 this._media.stop();
-                this._updateButtonStatus();
+                this._updateStatus();
             }
         },
 
@@ -192,7 +201,7 @@ define([
             }
 
             // This function can also be called from setTimeout. Clear our handle.
-            this._timeoutHandle = null;
+            this._maxDurationTimeoutHandle = null;
         },
 
         _handleRecordButtonClick: function () {
@@ -231,7 +240,7 @@ define([
             }
 
             this._activeFunction = this._FUNCTION_RECORD;
-            this._updateButtonStatus();
+            this._updateStatus();
 
             // Start audio recording, media object does not like dojo hitch.
             console.log("Start audio recording to file " + this._filePath);
@@ -243,7 +252,7 @@ define([
             } else {
                 timeoutDuration = 10000;
             }
-            this._timeoutHandle = setTimeout(function() {
+            this._maxDurationTimeoutHandle = setTimeout(function() {
                 thisObj._stopRecord();
             }, timeoutDuration);
         },
@@ -256,7 +265,7 @@ define([
             // No further action for playback
             if (this._activeFunction === this._FUNCTION_PLAYBACK) {
                 this._activeFunction = null;
-                this._updateButtonStatus();
+                this._updateStatus();
                 return;
             }
 
@@ -318,7 +327,7 @@ define([
         _saveDocumentFinalize: function () {
             this._hideProgress();
             this._activeFunction = null;
-            this._updateButtonStatus();
+            this._updateStatus();
         },
 
         _mediaError: function (error) {
@@ -351,11 +360,24 @@ define([
             }
         },
 
-        _updateButtonStatus: function () {
+        _updateStatus: function () {
+            switch (this._activeFunction) {
+                case this._FUNCTION_PLAYBACK:
+                    dojoClass.replace(this._activeFunctionIndicator, "glyphicon-play", "glyphicon-record");
+                    break;
+
+                case this._FUNCTION_RECORD:
+                    dojoClass.replace(this._activeFunctionIndicator, "glyphicon-record", "glyphicon-play");
+                    break;
+
+                default:
+                    break;
+            }
             if (this._activeFunction) {
                 dojoAttr.set(this._playButton, this._ATTR_DISABLED, this._ATTR_DISABLED);
                 dojoAttr.remove(this._stopButton, this._ATTR_DISABLED);
                 dojoAttr.set(this._recordButton, this._ATTR_DISABLED, this._ATTR_DISABLED);
+                dojoStyle.set(this._activeFunctionIndicator, "display", "inline-block");
             } else {
                 if (this._hasRecording) {
                     dojoAttr.remove(this._playButton, this._ATTR_DISABLED);
@@ -364,6 +386,7 @@ define([
                 }
                 dojoAttr.set(this._stopButton, this._ATTR_DISABLED, this._ATTR_DISABLED);
                 dojoAttr.remove(this._recordButton, this._ATTR_DISABLED);
+                dojoStyle.set(this._activeFunctionIndicator, "display", "none");
             }
 
         },
