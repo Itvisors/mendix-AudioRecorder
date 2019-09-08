@@ -124,6 +124,8 @@ define([
         uninitialize: function () {
             logger.debug(this.id + ".uninitialize");
             if (this._media) {
+                // TODO The stop buttion handling uses a timeout, so the mediaobject is gone when it wants to save.
+                // Add a flag to directly stop recording and release the media after saving is complete.
                 this._handleStopButtonClick();
                 this._media.release();
                 this._media = null;
