@@ -20,13 +20,13 @@
             <caption>On start nanoflow</caption>
             <category>Configuration</category>
             <description></description>
-            <returnType type="Boolean" isList="false"></returnType>
+            <returnType type="Void" isList="false"></returnType>
         </property>
         <property key="onStopNanoflow" type="nanoflow" required="false">
             <caption>On stop nanoflow</caption>
             <category>Configuration</category>
             <description></description>
-            <returnType type="Boolean" isList="false"></returnType>
+            <returnType type="Void" isList="false"></returnType>
         </property>
     </properties>
 </widget>
