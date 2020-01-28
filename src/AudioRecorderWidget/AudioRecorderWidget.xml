@@ -16,5 +16,17 @@
             <category>Configuration</category>
             <description>Stop recording delay in milliseconds, recording misses the last few seconds when saving.</description>
         </property>
+        <property key="onStartNanoflow" type="nanoflow" required="false">
+            <caption>On start nanoflow</caption>
+            <category>Configuration</category>
+            <description></description>
+            <returnType type="Boolean" isList="false"></returnType>
+        </property>
+        <property key="onStopNanoflow" type="nanoflow" required="false">
+            <caption>On stop nanoflow</caption>
+            <category>Configuration</category>
+            <description></description>
+            <returnType type="Boolean" isList="false"></returnType>
+        </property>
     </properties>
 </widget>

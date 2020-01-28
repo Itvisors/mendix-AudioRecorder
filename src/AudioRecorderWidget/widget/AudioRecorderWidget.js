@@ -27,6 +27,8 @@ define([
         // Parameters configured in the Modeler.
         maxDuration: 0,
         stopRecordingDelay: 0,
+        onStartNanoflow: null,
+        onStopNanoflow: null,
 
         // Internal variables.
         _contextObj: null,
@@ -198,6 +200,17 @@ define([
                 setTimeout(function() {
                     if (thisObj._media) {
                         thisObj._media.stopRecord();
+                        if (thisObj.onStopNanoflow) {
+                            mx.data.callNanoflow({
+                                nanoflow: thisObj.onStopNanoflow,
+                                origin: thisObj.mxform,
+                                context: thisObj.mxcontext,
+                                error: function(error) {
+                                    console.error("Nanoflow call failed, error: " + error.message);
+                                }
+                            });
+                
+                        }
                     }
                 }, timeoutDuration);
             }
@@ -257,6 +270,17 @@ define([
             this._maxDurationTimeoutHandle = setTimeout(function() {
                 thisObj._stopRecord();
             }, timeoutDuration);
+            if (this.onStartNanoflow) {
+                mx.data.callNanoflow({
+                    nanoflow: this.onStartNanoflow,
+                    origin: this.mxform,
+                    context: this.mxcontext,
+                    error: function(error) {
+                        console.error("Nanoflow call failed, error: " + error.message);
+                    }
+                });
+    
+            }
         },
 
         _mediaSuccess: function () {
