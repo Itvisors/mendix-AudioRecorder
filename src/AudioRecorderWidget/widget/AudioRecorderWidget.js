@@ -27,8 +27,7 @@ define([
         // Parameters configured in the Modeler.
         maxDuration: 0,
         stopRecordingDelay: 0,
-        onStartNanoflow: null,
-        onStopNanoflow: null,
+        recordingActiveAttr: null,
 
         // Internal variables.
         _contextObj: null,
@@ -200,17 +199,6 @@ define([
                 setTimeout(function() {
                     if (thisObj._media) {
                         thisObj._media.stopRecord();
-                        if (thisObj.onStopNanoflow) {
-                            mx.data.callNanoflow({
-                                nanoflow: thisObj.onStopNanoflow,
-                                origin: thisObj.mxform,
-                                context: thisObj.mxcontext,
-                                error: function(error) {
-                                    console.error("Nanoflow call failed, error: " + error.message);
-                                }
-                            });
-                
-                        }
                     }
                 }, timeoutDuration);
             }
@@ -270,17 +258,7 @@ define([
             this._maxDurationTimeoutHandle = setTimeout(function() {
                 thisObj._stopRecord();
             }, timeoutDuration);
-            if (this.onStartNanoflow) {
-                mx.data.callNanoflow({
-                    nanoflow: this.onStartNanoflow,
-                    origin: this.mxform,
-                    context: this.mxcontext,
-                    error: function(error) {
-                        console.error("Nanoflow call failed, error: " + error.message);
-                    }
-                });
-    
-            }
+            this._contextObj.set(this.recordingActiveAttr, true);
         },
 
         _mediaSuccess: function () {
@@ -298,6 +276,7 @@ define([
             // Set the name and commit. Object must be committed before file content can be saved.
             console.log("Set file name and commit");
             this._contextObj.set("Name", this._fileName);
+            this._contextObj.set(this.recordingActiveAttr, false);
             mx.data.commit({
                 mxobj: this._contextObj,
                 callback: lang.hitch(this, this._saveDocument),

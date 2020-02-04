@@ -16,17 +16,13 @@
             <category>Configuration</category>
             <description>Stop recording delay in milliseconds, recording misses the last few seconds when saving.</description>
         </property>
-        <property key="onStartNanoflow" type="nanoflow" required="false">
-            <caption>On start nanoflow</caption>
-            <category>Configuration</category>
-            <description></description>
-            <returnType type="Void" isList="false"></returnType>
-        </property>
-        <property key="onStopNanoflow" type="nanoflow" required="false">
-            <caption>On stop nanoflow</caption>
-            <category>Configuration</category>
-            <description></description>
-            <returnType type="Void" isList="false"></returnType>
-        </property>
+		<property key="recordingActiveAttr" type="attribute" required="true">
+			<caption>Recording active status</caption>
+			<category>Common</category>
+			<description>Flag to indicate recording is active, can be used for conditional visibility</description>
+			<attributeTypes>
+				<attributeType name="Boolean"/>
+			</attributeTypes>
+		</property>
     </properties>
 </widget>
